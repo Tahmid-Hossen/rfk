@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Helpers\ResponseHelper;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -38,22 +39,66 @@ class AuthController extends Controller
         ]);
 
         if (!Auth::attempt($credentials)) {
-            throw ValidationException::withMessages(['email' => 'Invalid credentials']);
+            return ResponseHelper::error('Invalid credentials', []);
         }
 
         $user = Auth::user();
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Create a token with expiration (24 hours)
+        $token = $user->createToken('auth-token', ['*'])
+            ->plainTextToken;
 
-        return response()->json([
-            'message' => 'Login successful',
-            'token' => $token,
-            'user' => $user
+        // Set the token expiration time (24 hours)
+        $expiresAt = now()->addHours(24);
+
+        $user->tokens->last()->update(['expires_at' => $expiresAt]);
+
+        return ResponseHelper::success('Login successful', [
+            'token' => $token,  // Return only the token
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role'=>$user->getRoleNames(),
+            ]
         ]);
+    }
+
+
+    public function refreshToken(Request $request)
+    {
+        $validated=$request->validate([
+            'access_token' => 'required|string',
+        ]);
+        $token = $request->access_token;
+
+        try {
+            // Verify and decode the token
+            $tokenModel = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+
+            if (!$tokenModel || !$tokenModel->tokenable) {
+                return ResponseHelper::error('Invalid token', [],401);
+            }
+            $user = $tokenModel->tokenable;
+            if (!$user instanceof User) {
+                return ResponseHelper::error('Invalid token owner', [], 401);
+            }
+            $expiresAt = now()->addHour(24);
+            $tokenModel->expires_at = $expiresAt;
+            $tokenModel->save();
+            return ResponseHelper::success('Success', []);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Token error: ' . $e->getMessage()], 401);
+        }
     }
 
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        return ResponseHelper::success('Logout successful', []);
+    }
+
+    public function user()
+    {
+        return auth()->user();
     }
 }
