@@ -39,28 +39,21 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        if (!Auth::attempt($credentials)) {
-            return ResponseHelper::error('Invalid credentials', []);
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $token = $user->createToken('API Token')->plainTextToken;
+
+            return ResponseHelper::success('Login successful', [
+                'token' => $token,  // Return only the token
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->getRoleNames(), // This should return the roles the user has
+                    'permissions' => $user->getAllPermissions()->pluck('name'), // Ensure you're using getAllPermissions() instead of getPermissionNames() if needed
+                ]
+            ]);
         }
-
-        $user = Auth::user();
-        // Create a token with expiration (24 hours)
-        $token = $user->createToken('auth-token', ['*'])
-            ->plainTextToken;
-
-        // Set the token expiration time (24 hours)
-        $expiresAt = now()->addHours(24);
-
-        $user->tokens->last()->update(['expires_at' => $expiresAt]);
-
-        return ResponseHelper::success('Login successful', [
-            'token' => $token,  // Return only the token
-            'user' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'role'=>$user->getRoleNames(),
-            ]
-        ]);
+        return ResponseHelper::error('Invalid credentials', [], 401);
     }
 
 

@@ -10,16 +10,6 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        // Define permissions
-        $permissions = [
-            'user-create', 'user-edit', 'user-delete', 'user-show',
-            'role-create', 'role-edit', 'role-delete', 'role-show'
-        ];
-
-        // Create each permission
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-        }
 
         // Create Super Admin role with all permissions
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin']);
@@ -29,8 +19,6 @@ class RoleSeeder extends Seeder
         $roles = ['Super Admin', 'SCM', 'Vendor', 'Management'];
         foreach ($roles as $roleName) {
             $role = Role::firstOrCreate(['name' => $roleName]);
-            // Assign specific permissions if needed (modify as required)
-            $role->givePermissionTo(['user-show']);
         }
     }
 }

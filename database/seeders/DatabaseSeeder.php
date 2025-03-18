@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Run the RoleSeeder first to create roles and permissions
+        $this->call(PermissionSeeder::class);
         $this->call(RoleSeeder::class);
 
         // Create a Super Admin user
