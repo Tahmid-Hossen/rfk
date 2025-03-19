@@ -16,10 +16,10 @@ class RoleController extends Controller
 
         // Add middleware for route protection
         $this->middleware('auth');
-        $this->middleware('can:view users')->only(['index', 'show']);
-        $this->middleware('can:create users')->only(['store']);
-        $this->middleware('can:edit users')->only(['update']);
-        $this->middleware('can:delete users')->only(['destroy']);
+        $this->middleware('can:view roles')->only(['index', 'show']);
+        $this->middleware('can:create roles')->only(['store']);
+        $this->middleware('can:edit roles')->only(['update']);
+        $this->middleware('can:delete roles')->only(['destroy']);
         $this->roleService = new RoleService();
     }
 
