@@ -33,27 +33,28 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-
-        $credentials = $request->validate([
+        $request->validate([
             'email' => 'required|email',
             'password' => 'required'
         ]);
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $token = $user->createToken('API Token')->plainTextToken;
+        $user = User::where('email', $request->email)->first();
 
-            return ResponseHelper::success('Login successful', [
-                'token' => $token,  // Return only the token
-                'user' => [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->getRoleNames(), // This should return the roles the user has
-                    'permissions' => $user->getAllPermissions()->pluck('name'), // Ensure you're using getAllPermissions() instead of getPermissionNames() if needed
-                ]
-            ]);
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return ResponseHelper::error('Invalid credentials', [], 401);
         }
-        return ResponseHelper::error('Invalid credentials', [], 401);
+
+        $token = $user->createToken('API Token')->plainTextToken;
+
+        return ResponseHelper::success('Login successful', [
+            'token' => $token,
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->getRoleNames(),
+                'permissions' => $user->getAllPermissions()->pluck('name'),
+            ]
+        ]);
     }
 
 
